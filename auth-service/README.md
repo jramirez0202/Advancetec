@@ -112,9 +112,16 @@ sobre esta base (microservicios, frontend):
   identificadores internos.
 
 Este SPI no tiene UI propia (solo el formulario de configuración en la
-Admin Console de Keycloak, que es para operadores técnicos), así que hoy
-no requiere bundles de traducción — pero los valores de rol ya siguen la
-regla (inglés) para que el resto de la plataforma escale sin retrabajo.
+Admin Console de Keycloak, que es para operadores técnicos) — los valores
+de rol ya siguen la regla (inglés) para que el resto de la plataforma
+escale sin retrabajo. Las pantallas de **login/account que sí ve el
+usuario final** son las que trae Keycloak de fábrica (no las escribimos
+nosotros) y ya soportan inglés/español una vez que se activa
+Internationalization en el realm (ver paso 5 de **Activar el provider en
+Keycloak**) — el selector de idioma aparece solo, sin que este módulo
+tenga que hacer nada. Cuando exista un frontend propio (fuera de este
+módulo), esas pantallas custom deberán seguir la misma regla EN/ES con su
+propio mecanismo de i18n.
 
 ## Build
 
@@ -147,7 +154,13 @@ Esto levanta Mongo en `localhost:27017` y Keycloak en `localhost:8081`
    (o déjalos vacíos para usar las variables de entorno del
    `docker-compose.yml`, y si tampoco existen, los defaults hardcodeados
    de `MongoClientHolder`) y guarda.
-5. En **Users** deberías ver ahora los usuarios que existen en la
+5. **Realm settings → Localization**: activa **Internationalization**,
+   agrega `en` y `es` como *Supported locales* (ver sección **Convención
+   de idioma (EN/ES)** arriba) — sin esto las pantallas de login/account
+   de Keycloak quedan fijas en inglés y no aparece el selector de idioma.
+   Esto es config del realm, no código, así que hay que repetirlo cada
+   vez que se crea el realm desde cero (no viaja con el jar del SPI).
+6. En **Users** deberías ver ahora los usuarios que existen en la
    colección de Mongo, con sus roles ya mapeados.
 
 ## Próximos pasos para escalar esto
