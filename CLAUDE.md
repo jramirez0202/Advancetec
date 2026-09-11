@@ -183,7 +183,39 @@ código cumple esta estructura (por ejemplo, un check en CI que falle si
 alguien mete lógica de negocio en un controller), eso es un tema aparte
 (un linter/arquetipo, no un MCP) y lo podemos armar después.
 
-## 8. Próximos pasos
+## 8. Frontend — dashboard + sidebar por rol (CONCEPTO, sin definir aún)
+
+Todavía no se eligió el framework ni la arquitectura del frontend. Esto
+es el acuerdo conceptual de cómo va a funcionar un dashboard con sidebar
+de funciones una vez que se defina, para no tener que redebatirlo cuando
+llegue el momento:
+
+- **El sidebar se arma en el frontend a partir del rol del JWT**
+  (`realm_access.roles`, ver sección 0 — hoy `admin` / `operator`). Cada
+  ítem del menú declara qué rol(es) lo pueden ver; un `operator` ve menos
+  opciones que un `admin`. Esto es solo UX/navegación, **nunca** la
+  autorización real.
+- **La autorización real vive siempre en el microservicio**, no en el
+  frontend: cada endpoint vuelve a chequear el rol contra el JWT
+  (validado contra el JWKS de Keycloak) antes de responder — "todo es
+  privado por defecto" (ver arquitectura en `auth-service/README.md`).
+  Ocultar un botón en el sidebar no reemplaza ese chequeo; si alguien
+  pega la URL o llama el endpoint directo sin el rol correcto, el
+  microservicio tiene que rechazarlo igual.
+- **Cada función del sidebar = una ruta del frontend + uno o más
+  endpoints** en el microservicio que corresponda, siguiendo la
+  estructura `controller/service/repository/dto` de la sección 2.
+- **El dashboard** es la pantalla de aterrizaje post-login: agrega datos
+  resumidos de varios microservicios (cada widget pega a su propio
+  endpoint, no hay un "servicio de dashboard" centralizado que junte
+  todo del lado del backend).
+- **Agregar una función nueva** más adelante = agregar el ítem al
+  sidebar con su rol permitido + la ruta en el frontend + el endpoint en
+  el microservicio correspondiente. Esto no toca `auth-service` salvo
+  que haga falta un rol nuevo (ahí sí: agregar la constante en
+  `Roles.java` + crear el Realm Role en Keycloak).
+
+## 9. Próximos pasos
 
 - [x] Este archivo vive como `CLAUDE.md` en la raíz de `Advancetec`.
 - [ ] Definir el `groupId`/`artifactId` oficial y el nombre corto de cada
@@ -192,3 +224,10 @@ alguien mete lógica de negocio en un controller), eso es un tema aparte
 - [ ] Decidir si se arma un arquetipo Maven / template con este esqueleto
       ya creado, para no repetir la estructura a mano cada vez que se
       agregue un microservicio Spring Boot nuevo.
+- [ ] Definir el frontend (framework, SPA vs BFF) y bajar a
+      implementación el concepto de la sección 8 (dashboard + sidebar
+      por rol).
+- [ ] Cuando exista el frontend: revisar el logo/branding y la posición
+      del selector de idioma EN/ES en las pantallas de Keycloak (login y
+      Account Console) — quedó pendiente a propósito, ver
+      `auth-service/README.md`.
