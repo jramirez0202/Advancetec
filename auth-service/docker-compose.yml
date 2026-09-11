@@ -6,11 +6,19 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+      # Seed de arranque: solo corre la primera vez que el volumen esta
+      # vacio (ver mongo-init/init-users.js).
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0.7
     container_name: advancetec-keycloak
-    command: start-dev
+    # --import-realm: crea el realm "advancetec" (roles admin/operator,
+    # i18n en/es, provider de Mongo ya registrado) desde
+    # keycloak-import/advancetec-realm.json en el primer arranque. Si el
+    # realm ya existe (container reiniciado, no recreado) lo salta, no
+    # pisa nada.
+    command: ["start-dev", "--import-realm"]
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -23,6 +31,7 @@ services:
       # El jar generado por `mvn package` (con mongodb-driver y jbcrypt ya
       # empaquetados via shade-plugin) se copia aqui para que Keycloak lo cargue.
       - ./target/advancetec-auth-service.jar:/opt/keycloak/providers/advancetec-auth-service.jar
+      - ./keycloak-import:/opt/keycloak/data/import:ro
     depends_on:
       - mongo
 

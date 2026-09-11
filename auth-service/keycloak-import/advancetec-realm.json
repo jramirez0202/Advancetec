@@ -1,0 +1,27 @@
+{
+  "realm": "advancetec",
+  "enabled": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "es"],
+  "defaultLocale": "en",
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "Administrator" },
+      { "name": "operator", "description": "Operator" }
+    ]
+  },
+  "components": {
+    "org.keycloak.storage.UserStorageProvider": [
+      {
+        "name": "advancetec-mongo",
+        "providerId": "advancetec-mongo-user-provider",
+        "config": {
+          "priority": ["0"],
+          "mongoUri": ["mongodb://mongo:27017"],
+          "mongoDatabase": ["advancetec_auth"],
+          "mongoCollection": ["users"]
+        }
+      }
+    ]
+  }
+}

@@ -46,6 +46,10 @@ Flujo:
 auth-service/
 ├── pom.xml
 ├── docker-compose.yml
+├── mongo-init/
+│   └── init-users.js       -> seed de arranque, corre solo con el volumen vacío
+├── keycloak-import/
+│   └── advancetec-realm.json  -> bootstrap del realm (roles, i18n, provider)
 └── src/main/
     ├── java/com/advancetec/auth/spi/
     │   ├── config/MongoClientHolder.java       -> conexión a Mongo
@@ -121,8 +125,10 @@ Si tu colección ya guarda los roles en español (`administrador`,
 `operador`), `Roles.normalize()` los traduce automáticamente al valor
 canónico en inglés — no hace falta migrar los datos. Para que el mapeo
 tenga efecto, esos mismos roles deben existir como **Realm Roles** en
-Keycloak (Admin Console → Realm roles → crea `admin` y `operator`); si un
-usuario trae un rol que no existe ahí, se ignora en vez de romper el login.
+Keycloak — en local ya vienen creados por `keycloak-import/advancetec-realm.json`
+(ver **Levantar todo en local**); en otro ambiente se crean a mano en
+Admin Console → Realm roles. Si un usuario trae un rol que no existe
+ahí, se ignora en vez de romper el login.
 
 Agregar un rol nuevo: añade la constante en `Roles.java` (y su alias en
 español si aplica) y crea el Realm Role correspondiente en Keycloak.
@@ -147,10 +153,10 @@ Admin Console de Keycloak, que es para operadores técnicos) — los valores
 de rol ya siguen la regla (inglés) para que el resto de la plataforma
 escale sin retrabajo. Las pantallas de **login/account que sí ve el
 usuario final** son las que trae Keycloak de fábrica (no las escribimos
-nosotros) y ya soportan inglés/español una vez que se activa
-Internationalization en el realm (ver paso 5 de **Activar el provider en
-Keycloak**) — el selector de idioma aparece solo, sin que este módulo
-tenga que hacer nada. Cuando exista un frontend propio (fuera de este
+nosotros) y ya soportan inglés/español porque `advancetec-realm.json`
+activa Internationalization (`en`/`es`) al crear el realm — el selector
+de idioma aparece solo, sin que este módulo tenga que hacer nada.
+Cuando exista un frontend propio (fuera de este
 módulo), esas pantallas custom deberán seguir la misma regla EN/ES con su
 propio mecanismo de i18n.
 
@@ -165,38 +171,74 @@ mvn clean package
 # ya empaquetados adentro (via maven-shade-plugin)
 ```
 
-## Levantar todo en local
+## Levantar todo en local (para un dev nuevo)
+
+Requisitos: Docker + Docker Compose, Maven, JDK 17+.
 
 ```bash
-docker compose up -d
+git clone <este repo>
+cd auth-service
+
+mvn clean package          # genera target/advancetec-auth-service.jar
+docker compose up -d       # Mongo + Keycloak, con el realm y la data ya listos
 ```
 
-Esto levanta Mongo en `localhost:27017` y Keycloak en `localhost:8081`
-(admin/admin), con el jar del SPI ya montado en `/opt/keycloak/providers/`.
+Con eso alcanza — no hay pasos manuales en la Admin Console. En el
+primer `up` (volumen vacío):
 
-## Activar el provider en Keycloak
+- **Mongo** corre `mongo-init/init-users.js` y crea la colección
+  `advancetec_auth.users` con 2 usuarios de prueba:
 
-1. Entra a la Admin Console (`http://localhost:8081`), crea o entra al
-   realm `advancetec`.
-2. **Realm roles → Create role**: crea `admin` y `operator` (ver sección
-   **Roles** arriba) — deben existir antes de que el login mapee roles.
-3. **User Federation → Add provider → advancetec-mongo-user-provider**.
-4. Completa los campos `mongoUri` / `mongoDatabase` / `mongoCollection`
-   (o déjalos vacíos para usar las variables de entorno del
-   `docker-compose.yml`, y si tampoco existen, los defaults hardcodeados
-   de `MongoClientHolder`) y guarda.
-5. **Realm settings → Localization**: activa **Internationalization**,
-   agrega `en` y `es` como *Supported locales* (ver sección **Convención
-   de idioma (EN/ES)** arriba) — sin esto las pantallas de login/account
-   de Keycloak quedan fijas en inglés y no aparece el selector de idioma.
-   Esto es config del realm, no código, así que hay que repetirlo cada
-   vez que se crea el realm desde cero (no viaja con el jar del SPI).
-6. En **Users** deberías ver ahora los usuarios que existen en la
-   colección de Mongo, con sus roles ya mapeados.
+  | username | password    | role       |
+  |----------|-------------|------------|
+  | `jdoe`   | `Test1234!` | `admin`    |
+  | `asmith` | `Test1234!` | `operator` |
+
+  (Ese hash bcrypt es solo para dev/test — no lo reutilices en un
+  ambiente real.)
+
+- **Keycloak** arranca con `--import-realm` (ver `command` en
+  `docker-compose.yml`) y crea el realm `advancetec` a partir de
+  `keycloak-import/advancetec-realm.json`: ya trae los Realm Roles
+  `admin`/`operator`, Internationalization en `en`/`es`, y el User
+  Federation provider (`advancetec-mongo-user-provider`) apuntando a
+  Mongo — todo lo que antes había que clickear a mano en la Admin
+  Console.
+
+Probar que quedó andando: entrá a
+`http://localhost:8081/realms/advancetec/account/` y logueate con
+`jdoe` / `Test1234!`.
+
+Admin Console (para inspeccionar/editar algo puntual):
+`http://localhost:8081` → `admin` / `admin`.
+
+**Importante:** `--import-realm` no pisa un realm que ya existe. Un
+`docker compose restart` reusa el mismo container (y su estado) y no
+reimporta nada; para volver a un estado 100% limpio (realm + Mongo
+desde cero) hace falta `docker compose down -v` antes de `up` — eso
+también borra el volumen de Mongo, así que se vuelve a correr el seed.
+
+Si tu colección Mongo real ya tiene datos (no es un ambiente de cero),
+no uses el seed: sacá el volumen `./mongo-init` del `docker-compose.yml`
+o simplemente no toques el volumen de datos existente.
+
+## Cómo agregar/editar el provider a mano
+
+Si necesitás tocar algo que no está en `advancetec-realm.json` (otro
+realm, otra config de conexión, etc.), se hace igual que cualquier User
+Federation de Keycloak: Admin Console → tu realm → **User Federation →
+Add provider → advancetec-mongo-user-provider**, completando
+`mongoUri` / `mongoDatabase` / `mongoCollection` (si los dejás vacíos,
+cae a las variables de entorno del `docker-compose.yml`, y si tampoco
+existen, a los defaults hardcodeados de `MongoClientHolder`).
 
 ## Próximos pasos para escalar esto
 
-- [ ] Definir el realm `advancetec` y sus clients en Keycloak.
+- [x] Definir el realm `advancetec` (roles, i18n, provider) — automatizado
+      en `keycloak-import/advancetec-realm.json`, se crea solo en local.
+- [ ] Definir los **clients** de Keycloak que van a usar los
+      microservicios/frontend reales (el `account-console` que usamos
+      para probar es el que trae Keycloak por defecto, no uno nuestro).
 - [x] Mapear roles: vienen del documento Mongo (`roles` / `role`), se
       normalizan a inglés y se resuelven contra Realm Roles de Keycloak
       (ver sección **Roles**). Hoy: `admin`, `operator`.
