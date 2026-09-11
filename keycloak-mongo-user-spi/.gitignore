@@ -1,5 +1,6 @@
 target/
 dependency-reduced-pom.xml
+docker-compose.override.yml
 *.class
 .idea/
 *.iml
