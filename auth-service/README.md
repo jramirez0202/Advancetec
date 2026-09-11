@@ -1,10 +1,13 @@
-# Advancetec — Keycloak Mongo User Storage SPI
+# Advancetec — Auth Service
 
-Base del sistema de autenticación de Advancetec. Este módulo es un
+Base del sistema de autenticación de Advancetec (módulo `auth-service`,
+`artifactId` Maven `advancetec-auth-service`). Hoy este módulo es un
 **Keycloak User Storage SPI**: un plugin que se instala dentro de Keycloak
 para que, en vez de guardar los usuarios en su base de datos interna,
 los busque y valide contra una **colección de usuarios ya existente en
-MongoDB**.
+MongoDB**. El nombre del módulo es deliberadamente genérico (por dominio,
+no por tecnología) para que si el mecanismo interno cambia el nombre
+siga siendo correcto.
 
 ## Arquitectura
 
@@ -40,7 +43,7 @@ Flujo:
 ## Estructura del proyecto
 
 ```
-keycloak-mongo-user-spi/
+auth-service/
 ├── pom.xml
 ├── docker-compose.yml
 └── src/main/
@@ -120,7 +123,7 @@ Compilado y verificado con Maven + JDK 17+ (`mvn clean package`, build
 
 ```bash
 mvn clean package
-# genera target/keycloak-mongo-user-spi.jar con mongodb-driver y jbcrypt
+# genera target/advancetec-auth-service.jar con mongodb-driver y jbcrypt
 # ya empaquetados adentro (via maven-shade-plugin)
 ```
 

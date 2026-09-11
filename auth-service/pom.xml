@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.advancetec.auth</groupId>
-    <artifactId>keycloak-mongo-user-spi</artifactId>
+    <artifactId>advancetec-auth-service</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Advancetec - Keycloak Mongo User Storage SPI</name>
+    <name>Advancetec - Auth Service</name>
     <description>
         Custom Keycloak User Storage Provider (SPI) que federa usuarios desde una
         coleccion de MongoDB existente, para que Keycloak autentique contra esos
@@ -72,7 +72,7 @@
     </dependencies>
 
     <build>
-        <finalName>keycloak-mongo-user-spi</finalName>
+        <finalName>advancetec-auth-service</finalName>
         <plugins>
             <!-- Empaqueta mongodb-driver-sync + jbcrypt DENTRO del jar del provider.
                  Las dependencias "provided" de Keycloak no se incluyen: ya viven

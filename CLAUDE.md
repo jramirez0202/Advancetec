@@ -10,24 +10,24 @@ monorepo: cada microservicio es una carpeta, no un repo aparte) y Claude
 Code lo lee automáticamente al empezar a trabajar en cualquier parte del
 repo.
 
-**Excepción explícita:** `keycloak-mongo-user-spi/` **no** sigue esta
+**Excepción explícita:** `auth-service/` **no** sigue esta
 estructura — es un plugin de Keycloak (User Storage SPI), sin capa HTTP,
 sin Spring Boot y sin DTOs/controllers. Su propia organización y
-convenciones están documentadas en `keycloak-mongo-user-spi/README.md`.
+convenciones están documentadas en `auth-service/README.md`.
 Este documento aplica a los microservicios de negocio (resource servers)
 que se construyan de aquí en adelante.
 
 ## 0. Convenciones que ya están en producción (no discutir de nuevo)
 
 Estas dos reglas ya se decidieron y están implementadas en
-`keycloak-mongo-user-spi/` — aplican a **todo** microservicio nuevo, no
+`auth-service/` — aplican a **todo** microservicio nuevo, no
 solo al de auth:
 
 - **Roles**: los valores canónicos son `admin` y `operator` (en inglés).
   Se leen del registro Mongo del usuario y terminan en el claim
   `realm_access.roles` del JWT que emite Keycloak — ningún microservicio
   debe mantener su propia tabla de roles. Ver
-  `keycloak-mongo-user-spi/src/main/java/com/advancetec/auth/spi/model/Roles.java`
+  `auth-service/src/main/java/com/advancetec/auth/spi/model/Roles.java`
   para la lista completa y cómo agregar uno nuevo.
 - **Idioma (EN/ES)**: código, modelos, nombres de campo, valores/IDs
   internos (roles, estados, claims, query params de filtros) van siempre
@@ -35,7 +35,7 @@ solo al de auth:
   error/validación, opciones de un filtro) va en **inglés y español**,
   resuelto en la capa de presentación (resource bundles / i18n) de cada
   servicio — nunca mezclado con los identificadores internos. Ver el
-  detalle en `keycloak-mongo-user-spi/README.md` → "Convención de idioma
+  detalle en `auth-service/README.md` → "Convención de idioma
   (EN/ES)".
 
 ## 1. Principio rector
@@ -188,7 +188,7 @@ alguien mete lógica de negocio en un controller), eso es un tema aparte
 - [x] Este archivo vive como `CLAUDE.md` en la raíz de `Advancetec`.
 - [ ] Definir el `groupId`/`artifactId` oficial y el nombre corto de cada
       servicio previsto para el MVP (el `groupId` común ya es
-      `com.advancetec`, ver `keycloak-mongo-user-spi/pom.xml`).
+      `com.advancetec`, ver `auth-service/pom.xml`).
 - [ ] Decidir si se arma un arquetipo Maven / template con este esqueleto
       ya creado, para no repetir la estructura a mano cada vez que se
       agregue un microservicio Spring Boot nuevo.

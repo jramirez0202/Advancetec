@@ -22,7 +22,7 @@ services:
     volumes:
       # El jar generado por `mvn package` (con mongodb-driver y jbcrypt ya
       # empaquetados via shade-plugin) se copia aqui para que Keycloak lo cargue.
-      - ./target/keycloak-mongo-user-spi.jar:/opt/keycloak/providers/keycloak-mongo-user-spi.jar
+      - ./target/advancetec-auth-service.jar:/opt/keycloak/providers/advancetec-auth-service.jar
     depends_on:
       - mongo
 
