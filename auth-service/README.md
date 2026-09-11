@@ -75,6 +75,37 @@ Campos que el repo espera hoy en cada documento:
   acepta un campo singular `role` si tu colección solo guarda uno por usuario.
 - `attributes` (subdocumento libre, opcional)
 
+## Este SPI es de solo lectura
+
+`MongoUserRepository` solo tiene métodos de lectura (`find*`, `search`,
+`count`) — no hay ningún camino para escribir de vuelta a Mongo. Es
+intencional: la colección la gestiona otro sistema, este SPI la federa
+para login, no la administra.
+
+Por eso `MongoUserAdapter` rechaza con `ReadOnlyException` cualquier
+intento real de editar `username`, `email`, `firstName` o `lastName`
+(por ejemplo desde "Personal info" en el Account Console) — antes esos
+setters aceptaban el cambio en silencio, mutaban un objeto en memoria de
+esa request nada más, y el dato se perdía sin ningún error visible al
+siguiente login.
+
+Dos detalles si tocás esto:
+- El chequeo es **"solo lanza si el valor cambia"**, no incondicional.
+  Keycloak reinvoca estos mismos setters con el valor ya vigente en
+  flujos propios (el required action `VERIFY_PROFILE`, que se dispara en
+  el primer login de cada usuario) — lanzar siempre ahí rompe el login
+  con un 500. Ver `rejectIfChanged()` en `MongoUserAdapter`.
+- `enabled` y `emailVerified` quedan afuera de esta regla a propósito:
+  Keycloak los reescribe desde sus propios mecanismos internos (p. ej.
+  `VERIFY_PROFILE` fuerza `emailVerified=false` en cada reconfirmación,
+  tenga o no sentido de negocio bloquearlo), así que esos dos setters
+  simplemente no hacen nada — el valor real siempre sigue viniendo de
+  Mongo vía `isEnabled()` / `isEmailVerified()`.
+- Por defecto Keycloak tampoco deja tocar el username desde el Account
+  Console salvo que actives **Realm settings → General → Edit username**
+  (`editUsernameAllowed`, `false` por default) — con eso apagado ni
+  siquiera llega el intento a nuestro código.
+
 ## Roles
 
 Los roles se leen del propio registro Mongo (campo `roles`, o `role` si es
