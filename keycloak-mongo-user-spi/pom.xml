@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.advancetec.auth</groupId>
+    <artifactId>keycloak-mongo-user-spi</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Advancetec - Keycloak Mongo User Storage SPI</name>
+    <description>
+        Custom Keycloak User Storage Provider (SPI) que federa usuarios desde una
+        coleccion de MongoDB existente, para que Keycloak autentique contra esos
+        usuarios y emita los JWT que consumen los microservicios de Advancetec.
+    </description>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <keycloak.version>26.0.7</keycloak.version>
+        <mongodb.driver.version>5.2.0</mongodb.driver.version>
+        <jbcrypt.version>0.4</jbcrypt.version>
+    </properties>
+
+    <dependencies>
+        <!-- Contratos del SPI de Keycloak. "provided" porque el propio Keycloak
+             los expone en tiempo de ejecucion (no se empaquetan en el jar final) -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-server-spi</artifactId>
+            <version>${keycloak.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-server-spi-private</artifactId>
+            <version>${keycloak.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-core</artifactId>
+            <version>${keycloak.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- UserStorageProvider, UserStorageProviderFactory y
+             AbstractUserAdapterFederatedStorage viven aqui, no en
+             keycloak-server-spi (moveido en Keycloak 26.x) -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-model-storage</artifactId>
+            <version>${keycloak.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Driver de MongoDB -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>${mongodb.driver.version}</version>
+        </dependency>
+
+        <!-- Verificacion de password hasheado (bcrypt) -->
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>${jbcrypt.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>keycloak-mongo-user-spi</finalName>
+        <plugins>
+            <!-- Empaqueta mongodb-driver-sync + jbcrypt DENTRO del jar del provider.
+                 Las dependencias "provided" de Keycloak no se incluyen: ya viven
+                 en el classpath del servidor. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

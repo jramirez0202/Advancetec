@@ -1,0 +1,30 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: advancetec-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: advancetec-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      ADVANCETEC_MONGO_URI: mongodb://mongo:27017
+      ADVANCETEC_MONGO_DATABASE: advancetec_auth
+      ADVANCETEC_MONGO_COLLECTION: users
+    ports:
+      - "8081:8080"
+    volumes:
+      # El jar generado por `mvn package` (con mongodb-driver y jbcrypt ya
+      # empaquetados via shade-plugin) se copia aqui para que Keycloak lo cargue.
+      - ./target/keycloak-mongo-user-spi.jar:/opt/keycloak/providers/keycloak-mongo-user-spi.jar
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:
