@@ -1,6 +1,8 @@
 package com.advancetec.auth.spi.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +23,13 @@ public class MongoUserEntity {
     private String passwordHash; // hash bcrypt, NUNCA texto plano
     private boolean enabled = true;
     private boolean emailVerified = false;
+
+    // Roles tal como vienen del campo "roles" (array) del documento Mongo.
+    // Valores canonicos soportados hoy: "admin", "operator" (ver Roles.java).
+    // El codigo/los valores van en ingles; la traduccion ES/EN de como se
+    // MUESTRAN se resuelve en la capa de presentacion (Admin Console /
+    // frontend), nunca aqui.
+    private List<String> roles = new ArrayList<>();
 
     // Atributos libres para lo que no mapea 1:1 a un campo estandar de Keycloak
     // (ej. tenantId, rut, telefono, etc.)
@@ -88,6 +97,14 @@ public class MongoUserEntity {
 
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 
     public Map<String, String> getAttributes() {

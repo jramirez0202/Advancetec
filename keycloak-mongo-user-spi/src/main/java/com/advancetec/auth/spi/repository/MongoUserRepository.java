@@ -2,6 +2,7 @@ package com.advancetec.auth.spi.repository;
 
 import com.advancetec.auth.spi.config.MongoClientHolder;
 import com.advancetec.auth.spi.model.MongoUserEntity;
+import com.advancetec.auth.spi.model.Roles;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
@@ -78,6 +79,7 @@ public class MongoUserRepository {
         entity.setPasswordHash(doc.getString("passwordHash"));
         entity.setEnabled(doc.getBoolean("enabled", true));
         entity.setEmailVerified(doc.getBoolean("emailVerified", false));
+        entity.setRoles(readRoles(doc));
 
         Map<String, String> attrs = new HashMap<>();
         Document rawAttrs = doc.get("attributes", Document.class);
@@ -92,5 +94,29 @@ public class MongoUserRepository {
         entity.setAttributes(attrs);
 
         return entity;
+    }
+
+    /**
+     * Lee los roles del documento: soporta tanto un array "roles" (varios
+     * roles por usuario, forma recomendada) como un campo "role" singular
+     * (compatibilidad si la coleccion real solo guarda uno). Cualquier
+     * variante en espanol (ej. "operador") se normaliza al valor canonico
+     * en ingles via Roles.normalize (ver com.advancetec.auth.spi.model.Roles).
+     */
+    private List<String> readRoles(Document doc) {
+        List<String> raw = doc.getList("roles", String.class);
+        if (raw == null) {
+            String single = doc.getString("role");
+            raw = single == null ? List.of() : List.of(single);
+        }
+
+        List<String> normalized = new ArrayList<>();
+        for (String role : raw) {
+            String canonical = Roles.normalize(role);
+            if (canonical != null && !normalized.contains(canonical)) {
+                normalized.add(canonical);
+            }
+        }
+        return normalized;
     }
 }
